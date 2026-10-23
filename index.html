@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffe3f0">
+  <title>奕伶老師的智慧課堂助手</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
+  <script src="https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand-row">
+      <a class="brand" href="#" aria-label="奕伶老師的智慧課堂助手首頁">🌈 奕伶老師的智慧課堂助手</a>
+      <button id="data-manager-open" class="button button-mint" type="button">🗂️ 資料管理</button>
+    </div>
+    <nav class="tool-nav" aria-label="課堂工具">
+      <button class="nav-button active" type="button" data-tool="raffle">🎡 抽籤機</button>
+      <button class="nav-button" type="button" data-tool="time">🍅 時間管理<span class="running-dot" aria-label="計時中" hidden></span></button>
+      <button class="nav-button" type="button" data-tool="groups">⏱️ 小組計時<span class="running-dot" aria-label="計時中" hidden></span></button>
+      <button class="nav-button" type="button" data-tool="score">🏆 計分板</button>
+      <button class="nav-button" type="button" data-tool="board">🎨 無限畫板</button>
+      <button class="nav-button" type="button" data-tool="irs">💬 即時問答</button>
+    </nav>
+  </header>
+
+  <main class="app-main">
+    <section class="tool-panel active" id="tool-raffle" data-panel="raffle">
+      <div class="panel-heading"><div><p class="eyebrow">CLASSROOM LOTTERY</p><h1>命運輪盤抽籤機 🎲</h1><p>公平抽出每一位同學，也可以快速分組！</p></div></div>
+      <div class="layout-two">
+        <article class="card">
+          <h2>抽籤設定</h2>
+          <div class="segmented" role="group" aria-label="抽籤模式">
+            <button class="mode-button active" type="button" data-raffle-mode="names">抽同學</button>
+            <button class="mode-button" type="button" data-raffle-mode="numbers">抽號碼</button>
+          </div>
+          <div id="raffle-name-settings">
+            <label for="roster-input">學生名單（每行一位）</label>
+            <textarea id="roster-input" rows="8" placeholder="例如：&#10;小明&#10;小美&#10;小華"></textarea>
+            <div class="inline-actions"><button id="save-roster" class="button button-soft" type="button">儲存名單</button><span class="muted" id="roster-count">目前 0 位</span></div>
+          </div>
+          <div id="raffle-number-settings" hidden>
+            <div class="field-grid">
+              <label>起始號碼<input id="number-start" type="number" min="0" value="1"></label>
+              <label>結束號碼<input id="number-end" type="number" min="0" value="30"></label>
+            </div>
+            <label for="number-exclusions">排除號碼（逗號分隔，也可用範圍，例如 3, 8-10）</label>
+            <input id="number-exclusions" type="text" placeholder="例如：3, 8-10">
+          </div>
+          <label class="check-line"><input id="raffle-no-repeat" type="checkbox" checked> 抽過不重複</label>
+          <div class="button-row">
+            <button id="draw-one" class="button button-primary button-large" type="button">✨ 抽一位</button>
+            <button id="draw-groups" class="button button-mint" type="button">🎉 隨機分組</button>
+          </div>
+          <div class="field-grid group-options">
+            <label>分成幾組<input id="group-count" type="number" min="2" max="12" value="4"></label>
+            <button id="reset-raffle" class="button button-soft" type="button">重新開始</button>
+          </div>
+          <p class="status-message" id="raffle-status" role="status"></p>
+        </article>
+        <article class="card draw-card">
+          <div class="wheel" id="raffle-wheel" role="img" aria-label="抽籤轉盤，尚未開始">
+            <span class="wheel-pointer" aria-hidden="true"></span>
+            <svg class="wheel-svg" viewBox="0 0 500 500" aria-hidden="true"></svg>
+            <span class="wheel-hub" aria-hidden="true">🎯</span>
+            <output id="wheel-winner" class="wheel-winner" aria-live="polite" hidden></output>
+          </div>
+          <p class="wheel-hint">指針停在哪個名字／號碼，就是抽中的對象！</p>
+          <p class="eyebrow">抽中的幸運兒是</p>
+          <output id="draw-result" class="draw-result" aria-live="polite">準備好了嗎？</output>
+          <div class="history-block"><h2>抽籤紀錄</h2><ol id="raffle-history" class="chip-list"><li class="muted">還沒有抽籤紀錄</li></ol></div>
+          <div id="group-results" class="group-results" hidden></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="tool-panel" id="tool-time" data-panel="time" hidden>
+      <div class="panel-heading"><div><p class="eyebrow">TIME MANAGEMENT</p><h1>課堂時間管理 🍅</h1><p>掌握每一段專注時光，讓課堂節奏更剛好。</p></div></div>
+      <article class="card exam-card">
+        <div class="exam-topline">
+          <div><p class="eyebrow">EXAM CLOCK</p><h2 id="exam-subject-display">考試大鐘</h2><p id="exam-date-display" class="muted"></p></div>
+          <button id="exam-fullscreen" class="button button-soft" type="button">⛶ 全螢幕</button>
+        </div>
+        <div class="exam-clock-grid">
+          <div><span class="muted">現在時間</span><output id="exam-current-time" class="exam-current-time">--:--:--</output></div>
+          <div><span id="exam-remaining-label" class="muted">距離結束</span><output id="exam-remaining" class="exam-remaining">尚未設定</output></div>
+        </div>
+        <div class="exam-info-grid">
+          <p>考試時間 <strong id="exam-time-display">--:-- ～ --:--</strong></p>
+          <p>監考老師 <strong id="exam-teacher-display">尚未設定</strong></p>
+          <p>出席狀況 <strong id="exam-attendance-display">應到 0 ／實到 0</strong></p>
+        </div>
+        <form id="exam-form" class="form-stack exam-form">
+          <div class="field-grid">
+            <label>考試／課程名稱<input id="exam-subject" maxlength="80" placeholder="例如：自然科小考"></label>
+            <label>監考老師<input id="exam-teacher" maxlength="60" placeholder="老師姓名"></label>
+            <label>開始時間<input id="exam-start" type="time"></label>
+            <label>結束時間<input id="exam-end" type="time"></label>
+            <label>應到人數<input id="exam-expected" type="number" min="0" value="0"></label>
+            <label>實到人數<input id="exam-present" type="number" min="0" value="0"></label>
+          </div>
+          <label>提醒事項<input id="exam-notes" maxlength="200" placeholder="可填寫考試提醒或課堂公告"></label>
+          <button class="button button-mint" type="submit">儲存考試資訊</button>
+        </form>
+        <p id="exam-status" class="status-message" role="status"></p>
+        <p id="exam-marquee" class="exam-marquee" hidden></p>
+      </article>
+      <div class="layout-two">
+        <article class="card timer-face">
+          <div class="tomato" aria-hidden="true">🍅</div>
+          <p class="eyebrow" id="focus-mode-label">專注倒數</p>
+          <output id="focus-clock" class="focus-clock" role="timer">25:00</output>
+          <div class="button-row centered">
+            <button id="focus-start" class="button button-primary button-large" type="button">開始</button>
+            <button id="focus-reset" class="button button-soft" type="button">重設</button>
+          </div>
+          <div class="field-grid">
+            <label>專注（分鐘）<input id="focus-minutes" type="number" min="1" max="180" value="25"></label>
+            <label>休息（分鐘）<input id="break-minutes" type="number" min="1" max="60" value="5"></label>
+          </div>
+          <p class="muted center" id="focus-count">完成專注 0 次</p>
+        </article>
+        <article class="card">
+          <h2>課表與考試大鐘</h2>
+          <p class="muted">新增的課表會保存在本機，可由右上角「資料管理」匯出備份。</p>
+          <form id="schedule-form" class="form-stack">
+            <label>課程／活動名稱<input id="schedule-subject" required maxlength="80" placeholder="例如：數學小考"></label>
+            <div class="field-grid">
+              <label>開始時間<input id="schedule-start" type="time" required></label>
+              <label>結束時間<input id="schedule-end" type="time" required></label>
+            </div>
+            <div class="field-grid">
+              <label>授課老師<input id="schedule-teacher" maxlength="60" placeholder="老師姓名"></label>
+              <label>應到人數<input id="schedule-expected" type="number" min="0" value="0"></label>
+            </div>
+            <button class="button button-primary" type="submit">＋ 新增課表</button>
+          </form>
+          <div id="schedule-list" class="schedule-list"></div>
+          <div class="bell-tools">
+            <button id="bell-ring" class="button button-yellow" type="button">🔔 播放上課鐘</button>
+            <label class="check-line"><input id="auto-bell" type="checkbox"> 啟用課表自動提醒</label>
+            <p class="status-message" id="bell-status" role="status"></p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="tool-panel" id="tool-groups" data-panel="groups" hidden>
+      <div class="panel-heading"><div><p class="eyebrow">TEAM TIMER</p><h1>小組倒數計時器 ⏱️</h1><p>設定各組時間，專注完成課堂任務。</p></div>
+        <div class="button-row"><button id="group-start-all" class="button button-primary" type="button">全部開始</button><button id="group-reset-all" class="button button-soft" type="button">全部重設</button><button id="group-use-score-teams" class="button button-mint" type="button">使用計分板小組</button></div>
+      </div>
+      <div id="group-timer-grid" class="timer-grid"></div>
+    </section>
+
+    <section class="tool-panel" id="tool-score" data-panel="score" hidden>
+      <div class="panel-heading"><div><p class="eyebrow">TEAM SCOREBOARD</p><h1>課堂計分板 🏆</h1><p>讓每一份專注與合作，都看得見。</p></div>
+        <div class="button-row"><button id="score-add-team" class="button button-mint" type="button">＋ 新增小組</button><button id="score-reset" class="button button-soft" type="button">全部歸零</button></div>
+      </div>
+      <article class="card">
+        <div class="score-toolbar">
+          <h2>小組積分</h2>
+          <div class="inline-actions"><label class="compact-label">加／減分<input id="score-step" type="number" min="1" max="100" value="1"></label><span class="muted">點擊小組名稱可修改</span></div>
+        </div>
+        <div id="score-team-grid" class="score-grid"></div>
+        <div class="button-row"><button id="score-import-groups" class="button button-primary" type="button">📥 將最近分組帶入計分板</button></div>
+      </article>
+      <section class="card noise-panel" aria-labelledby="noise-title">
+        <div class="noise-header">
+          <div class="noise-title"><span class="mic-icon" aria-hidden="true">🎙️</span><div><h2 id="noise-title">噪音偵測系統</h2><p class="muted">即時監測教室音量，協助維持安靜。</p></div></div>
+          <span class="volume-readout" id="mic-state">尚未啟動</span>
+        </div>
+        <div class="noise-body">
+          <div>
+            <div class="meter-labels"><label for="volume-meter">即時音量</label><span class="volume-readout" id="volume-value">0%</span></div>
+            <div class="meter-track" id="volume-meter" role="meter" aria-label="即時麥克風音量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="meter-fill" id="volume-fill"></div></div>
+            <div class="meter-ticks" aria-hidden="true"><span>安靜</span><span>適中</span><span>吵鬧</span></div>
+            <p class="noise-status" id="noise-status" aria-live="polite">啟動後，對著麥克風說話或拍手，觀察音量條變化。</p>
+            <div class="noise-actions"><button class="button button-primary" id="toggle-mic" type="button">啟動麥克風</button></div>
+            <p class="noise-explainer">音量達到門檻時，指定小組扣 1 分；每次觸發後冷卻 5 秒。音量低於門檻並持續指定秒數，指定小組加 1 分。</p>
+          </div>
+          <div class="noise-settings">
+            <div class="setting-row"><label for="threshold">吵鬧門檻</label><output class="setting-value" id="threshold-value" for="threshold">35%</output><input id="threshold" type="range" min="5" max="90" value="35"></div>
+            <div class="setting-row"><label for="quiet-seconds">連續安靜時間</label><input id="quiet-seconds" type="number" min="1" max="60" value="10"><div class="quiet-progress" role="progressbar" aria-label="安靜加分進度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="quiet-fill"></span></div></div>
+            <div class="setting-row"><label for="noise-team">自動計分小組</label><select id="noise-team" aria-label="噪音自動計分小組"></select></div>
+            <div class="notice" id="mic-help">請允許瀏覽器存取麥克風。音訊只在本機即時分析，不會錄音或上傳。麥克風需透過 HTTPS 或 localhost 使用。</div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="tool-panel board-panel" id="tool-board" data-panel="board" hidden>
+      <div class="panel-heading"><div><p class="eyebrow">INFINITE WHITEBOARD</p><h1>課堂無限畫板 🎨</h1><p>用手指、滑鼠或觸控筆自由書寫。</p></div></div>
+      <article class="card board-card">
+        <div class="board-toolbar">
+          <label>畫筆顏色<input id="board-color" type="color" value="#ff477e"></label>
+          <label>粗細<input id="board-size" type="range" min="2" max="36" value="6"></label>
+          <button id="board-eraser" class="button button-soft" type="button" aria-pressed="false">橡皮擦</button>
+          <button id="board-undo" class="button button-soft" type="button">↶ 復原</button>
+          <button id="board-clear" class="button button-soft" type="button">清空</button>
+          <button id="board-download" class="button button-mint" type="button">下載 PNG</button>
+        </div>
+        <div class="canvas-wrap"><canvas id="whiteboard" aria-label="可繪圖的課堂白板"></canvas></div>
+      </article>
+    </section>
+
+    <section class="tool-panel" id="tool-irs" data-panel="irs" hidden>
+      <div class="panel-heading"><div><p class="eyebrow">INSTANT RESPONSE SYSTEM</p><h1>課堂即時問答 💬</h1><p>老師建立教室，學生使用代碼加入並即時作答。</p></div></div>
+      <div id="irs-teacher-view">
+        <div id="irs-teacher-status" class="status-message" role="status">建立教室後即可發布選擇題。</div>
+        <article id="irs-create-card" class="card">
+          <h2>老師：建立教室</h2><p class="muted">學生可使用教室代碼或掃描 QR Code 加入。即時連線需要網路；若要讓其他裝置開啟加入連結，請先將網站放在可由學生連線的網址上。</p>
+          <button id="irs-create-room" class="button button-primary button-large" type="button">建立教室</button>
+        </article>
+        <div id="irs-teacher-dashboard" hidden>
+          <article class="card share-card">
+            <div><h2>教室代碼</h2><output id="irs-room-code" class="room-code">----</output><p>加入連結：<a id="irs-join-link" href="#">等待建立教室</a></p></div>
+            <div id="irs-qrcode" aria-label="學生加入教室 QR Code"></div>
+          </article>
+          <article class="card">
+            <h2>發布選擇題</h2>
+            <form id="irs-question-form" class="form-stack">
+              <label>題目<input id="irs-question" maxlength="300" required placeholder="輸入題目"></label>
+              <div class="field-grid">
+                <label>A 選項<input id="irs-option-A" maxlength="120" required></label>
+                <label>B 選項<input id="irs-option-B" maxlength="120" required></label>
+                <label>C 選項<input id="irs-option-C" maxlength="120" required></label>
+                <label>D 選項<input id="irs-option-D" maxlength="120" required></label>
+              </div>
+              <button class="button button-primary" type="submit">發布題目</button>
+            </form>
+          </article>
+          <article class="card">
+            <div class="score-toolbar"><h2>作答統計</h2><button id="irs-export-csv" class="button button-soft" type="button">匯出 CSV</button></div>
+            <div id="irs-active-question" class="active-question muted">尚未發布題目</div>
+            <div id="irs-answer-chart" class="answer-chart"></div>
+            <h3>學生名單（<span id="irs-student-count">0</span>）</h3>
+            <ul id="irs-student-list" class="student-list"></ul>
+          </article>
+        </div>
+      </div>
+      <div id="irs-student-view" hidden>
+        <article class="card">
+          <h2>學生加入教室</h2>
+          <p>教室代碼：<strong id="irs-student-room-code" class="room-code"></strong></p>
+          <form id="irs-join-form" class="form-stack">
+            <label>你的姓名<input id="irs-student-name" maxlength="40" required placeholder="輸入姓名"></label>
+            <button class="button button-primary" type="submit">加入教室</button>
+          </form>
+          <p id="irs-student-status" class="status-message" role="status">輸入姓名後加入。</p>
+        </article>
+        <article id="irs-student-question-card" class="card" hidden>
+          <h2 id="irs-student-question"></h2>
+          <div id="irs-student-options" class="student-options"></div>
+          <p id="irs-student-answer-status" class="muted" aria-live="polite"></p>
+        </article>
+      </div>
+    </section>
+    <p id="app-notice" class="app-notice" role="status" aria-live="polite"></p>
+  </main>
+
+  <dialog id="data-manager" class="data-dialog">
+    <form method="dialog" class="dialog-heading"><h2>🗂️ 資料管理</h2><button class="icon-button" aria-label="關閉">✕</button></form>
+    <p>備份或還原本機名單、小組分數與課表資料。</p>
+    <div class="button-row">
+      <button id="export-data" class="button button-primary" type="button">⬇️ 匯出 JSON</button>
+      <button id="import-data-trigger" class="button button-mint" type="button">⬆️ 匯入 JSON</button>
+      <input id="import-data-file" type="file" accept="application/json,.json" hidden>
+    </div>
+    <p id="data-manager-status" class="status-message" role="status"></p>
+    <p class="muted small-print">資料儲存在目前瀏覽器的本機空間。請定期匯出備份；匯入會取代目前的名單、分數及課表。</p>
+  </dialog>
+</body>
+</html>
